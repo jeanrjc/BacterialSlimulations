@@ -75,8 +75,11 @@ def run_nonWF(run_id, out_dir_nWF, file_suff=""):
     os.makedirs(out_dir_nWF, exist_ok=True)
 
     if not os.path.isfile(os.path.join(out_dir_nWF, run_id + ".npz")):
-
-        slim(f"nonWF_{params['script']}{file_suff}.slim", run_id, out_dir=out_dir_nWF)
+        slim(os.path.join("models",
+                          f"{params['model']}",
+                          f"nonWF_{params['model']}.slim"),
+             run_id,
+             out_dir=out_dir_nWF)
         time_nWF_fw = time.time() - t1
         t1 = time.time()
  
@@ -98,7 +101,11 @@ def run_WF(run_id, out_dir_WF, file_suff=""):
     os.makedirs(out_dir_WF, exist_ok=True)
     logging.debug("in run WF")
     if not os.path.isfile(os.path.join(out_dir_WF, run_id+".npz")):
-        slim(f"WF_{params['script']}{file_suff}.slim", run_id, out_dir=out_dir_WF)
+        slim(os.path.join("models",
+                          f"{params['model']}",
+                          f"WF_{params['model']}.slim"),
+             run_id,
+             out_dir=out_dir_WF)
         ss.convert_ms(os.path.join(out_dir_WF, run_id+".msout"))
         try:
             os.remove(os.path.join(out_dir_WF, run_id+".msout"))
@@ -200,9 +207,9 @@ if __name__ == '__main__':
                         (every indiv will endure gene conversion at each generation)""")
         recombination_rate = 1 / chr_size
 
-    os.makedirs(params["script"], exist_ok=True)
-    copyfile(args.config, os.path.join(params["script"],
-                                       f"params_{params['script']}-{params['rescaling_factor']}_{params['scenario']}"))
+    os.makedirs(params["model"], exist_ok=True)
+    copyfile(args.config, os.path.join(params["model"],
+                                       f"params_{params['model']}-{params['rescaling_factor']}_{params['scenario']}"))
 
 
 
@@ -211,15 +218,15 @@ if __name__ == '__main__':
     ##################
     format_rep = "0>" + str(np.floor(np.log10(params["N_replicat"]) + 1).astype(int))
     df_time = pd.DataFrame(columns=["WF", "nonWF"])
-    scen_id = "{model}-{rf}_{scenario}".format(model=params["script"],
+    scen_id = "{model}-{rf}_{scenario}".format(model=params["model"],
                                                          rf=params["rescaling_factor"],
                                                          scenario=params["scenario"])
     out_dir_WF = os.path.join(args.outdir,
-                                "{model}/{type}/{scen_id}".format(model=params["script"],
+                                "{model}/{type}/{scen_id}".format(model=params["model"],
                                                                 type="WF",
                                                                 scen_id=scen_id))
     out_dir_nWF = os.path.join(args.outdir,
-                                "{model}/{type}/{scen_id}".format(model=params["script"],
+                                "{model}/{type}/{scen_id}".format(model=params["model"],
                                                                   type="nonWF",
                                                                   scen_id=scen_id))
 
