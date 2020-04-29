@@ -1,0 +1,113 @@
+initialize()
+{
+	if (exists("slimgui"))
+	{
+		// set constants in SLiMgui for testing
+		defineConstant("Ne", 1e5);
+		defineConstant("Mu", 1e-7);
+		defineConstant("Rho", 1e-10);
+		defineConstant("genomeSize", 1e5);
+		defineConstant("tractlen", 500);
+		defineConstant("N_generations", 1000);
+	}
+
+	initializeSLiMModelType("nonWF");
+	initializeTreeSeq();
+	initializeMutationRate(0); // no neutral mutation in the forward simulation, we will add them later with msprime.
+	initializeMutationType("m1", 1.0, "f", 0.0); // neutral (unused)
+	initializeGenomicElementType("g1", m1, 1.0);
+	initializeGenomicElement(g1, 0, genomeSize - 1);
+	initializeRecombinationRate(0); // In SLiM recombination is between sister chromatids
+    defineConstant("HGTrate", Rho * genomeSize); // HGT probability
+
+}
+
+1 early()
+{
+	sim.addSubpop("p1", Ne);
+	sim.rescheduleScriptBlock(s1, start=N_generations, end=N_generations);
+}
+
+early()
+{
+	if (sim.generation % 1000 == 0)
+	{
+		cat(">> (" + sim.generation + ") GC : ");
+		catn(sim.getValue("GC"));
+	}
+	sim.setValue("GC", 0);
+}
+
+
+// modify the reproduction callback
+// to simulate homologuous recombination in a gene conversion manner
+// after HGT of homologuous DNA fragments
+// Modify the reproduction callback:
+// Draw the number of target of a HGT event
+// For each of them, draw a source individual, a start position
+// and a size of the fragment to be recombined through GC
+reproduction()
+{
+	// each parental individual reproduces twice, with independent probabilities of HGT
+	parents = p1.individuals;
+
+	for (rep in 0:1)
+	{
+		is_HGT = rbinom(size(parents), 1, HGTrate); // should we divide by two 2 ?
+
+		for (i in seqAlong(parents))
+		{
+			if (is_HGT[i])
+			{
+				HGTsource = p1.sampleIndividuals(1, exclude=parents[i]).genome1;
+				pos_beg = rdunif(1, 0, genomeSize - 1);
+				tractLength = rgeom(1, 1.0 / tractlen);
+				pos_end = pos_beg + tractLength - 1;
+				if (pos_end == -1) {
+					pos_end = 1;
+				}
+				else
+				{
+					pos_end = integerMod(pos_beg + tractLength - 1, genomeSize);
+				}
+				// HGT from breaks[0] forward to breaks[1] on a circular chromosome
+				if (pos_beg > pos_end)
+					breaks = c(0, pos_end, pos_beg);
+				else
+					breaks = c(pos_beg, pos_end);
+
+				subpop.addRecombinant(parents[i].genome1, HGTsource, breaks, NULL, NULL, NULL);
+			}
+			else
+			{
+				// no horizontal gene transfer; clonal replication
+				subpop.addRecombinant(parents[i].genome1, NULL, NULL, NULL, NULL, NULL);
+			}
+		}
+		sim.setValue("GC", sim.getValue("GC")+sum(is_HGT));
+	}
+
+	self.active = 0;
+}
+
+early()
+{
+	inds = p1.individuals;
+	ages = inds.age;
+
+	// kill off parental individuals; conceptually they don't even exist,
+	// since they split by mitosis to generate their offspring
+	inds[ages > 0].fitnessScaling = 0.0;
+
+	// density-dependent population regulation on juveniles, toward Ne
+	juvenileCount = sum(ages == 0);
+	inds[ages == 0].fitnessScaling = Ne / juvenileCount;
+}
+
+// At the end of the simulation, sample
+// 50 genomes and output it in ms format.
+s1 10000 late()
+{
+	sim.treeSeqOutput(runId + ".tree");
+	sim.simulationFinished();
+}

@@ -1,0 +1,217 @@
+function (void)geneConversion(o<Individual>$ targetIndividual, integer$ meanTractLength)
+{
+	// Choose a source individual at random, excluding the target
+	sourceIndividual = p1.sampleIndividuals(1, exclude=targetIndividual);
+
+	sourceGenome = sourceIndividual.genome1;
+	targetGenome = targetIndividual.genome1;
+
+	// Choose a tract length and a position for the gene conversion event
+	position = rdunif(1, 0, sim.chromosome.lastPosition);
+	tractLength = rgeom(1, 1.0 / meanTractLength);
+	p_end = (position + tractLength - 1) % sim.chromosome.lastPosition;
+
+	// BCH: might just do "mutations" instead of "mutationsOfType(m1)",
+	// so models that use other mutation types work without modification?
+	// Is there a reason for GC to only copy m1 mutations specifically?
+    // JC: You're right. Need to change this. TODO
+	source_m1_muts = sourceGenome.mutationsOfType(m1);
+	source_m1_positions = source_m1_muts.position;
+	target_m1_muts = targetGenome.mutationsOfType(m1);
+	target_m1_positions = target_m1_muts.position;
+
+	// Get the mutations from the sourceGenome and targetGenome that are within the GC tract
+	// If p_end < position, it means that we're over the edge of the chr
+	if (p_end < position)
+	{
+		mutToCopy = source_m1_muts[source_m1_positions <= p_end | source_m1_positions >= position];
+		mutToRemove = target_m1_muts[target_m1_positions <= p_end | target_m1_positions >= position];
+	}
+	// Else it's normal
+	else
+	{
+		mutToCopy = source_m1_muts[source_m1_positions >= position & source_m1_positions <= p_end];
+		mutToRemove = target_m1_muts[target_m1_positions >= position & target_m1_positions <= p_end];
+	}
+
+	// Remove the mutations from targetGenome that are within the tract
+	targetGenome.removeMutations(mutToRemove);
+
+	// Add the mutations found in sourceGenome
+	targetGenome.addMutations(mutToCopy);
+
+	return;
+}
+
+function (void)readMS(string$ path)
+{
+	// Read an MS file and create mutations; adapted from manual recipe 13.4
+	// with modifications specifically for the haploid case
+	lines = readFile(path);
+	index = 0;
+
+	// skip lines until reaching the // line, then skip that line
+	while (lines[index] != "//")
+		index = index + 1;
+	index = index + 1;
+
+	if (index + 2 + p1.individualCount > size(lines))
+		stop("File is too short; terminating.");
+
+	// next line should be segsites:
+	segsitesLine = lines[index];
+	index = index + 1;
+	parts = strsplit(segsitesLine);
+	if (size(parts) != 2) stop("Malformed segsites.");
+	if (parts[0] != "segsites:") stop("Missing segsites.");
+	segsites = asInteger(parts[1]);
+
+	// and next is positions:
+	positionsLine = lines[index];
+	index = index + 1;
+	parts = strsplit(positionsLine);
+	// If trailing space at the end of the positions array (as outputed by ms)
+	if (size(parts) == segsites + 2)
+	{
+		parts = parts[0:segsites];
+	}
+	if (size(parts) != segsites + 1) stop("Malformed positions.");
+	if (parts[0] != "positions:") stop("Missing positions.");
+	positions = asFloat(parts[1:(size(parts)-1)]);
+
+	// create all mutations in a genome in a dummy subpopulation
+	sim.addSubpop("p1000", 1);
+	g = p1000.individuals.genome1;
+	L = sim.chromosome.lastPosition;
+	intPositions = asInteger(round(positions * L));
+	muts = g.addNewMutation(m1, 0.0, intPositions);
+
+	// add the appropriate mutations to each first genome (haploid)
+	for (hg in p1.individuals.genome1)
+	{
+		f = asLogical(asInteger(strsplit(lines[index], "")));
+		index = index + 1;
+		hg.addMutations(muts[f]);
+	}
+
+	// remove the dummy subpopulation
+	p1000.setSubpopulationSize(0);
+}
+
+
+initialize()
+{
+	defineConstant("Theta", 2*Ne*Mu); // Theta
+	defineConstant("GCrate", Rho * genomeSize); // HGT probability
+	defineConstant("msRho", 2* Ne * Rho * genomeSize); // HGT probability
+	defineConstant("x1", rdunif(1, 1, 10000000)); // random seed for ms otherwise there is a risk that it reuses seed from previous run.
+	defineConstant("x2", rdunif(1, 1, 10000000)); // random seed for ms
+	defineConstant("x3", rdunif(1, 1, 10000000)); // random seed for ms
+	initializeMutationRate(Mu);
+	initializeMutationType("m1", 1.0, "f", 0.0);
+	initializeGenomicElementType("g1", m1, 1.0);
+	initializeGenomicElement(g1, 0, genomeSize - 1);
+	initializeRecombinationRate(0); // In SLiM recombination is between sister chromatids
+}
+
+// At the first generation:
+// - create a subpopulation (or many)
+// - add diversity to it by loading files obtain after a burnin run with ms
+1 late()
+{
+	sim.setValue("GC", 0); // logging purpose
+	sim.setValue("nindiv", 0);
+	sim.addSubpop("p1", asInteger(Ne));
+	p1.setCloningRate(1.0); // Essential for bacteria.
+	c1 = clock();
+
+	// sublaunch ms to generate initial state
+	ms_args = c(asInteger(Ne), 1, "-t", Theta * genomeSize, "-r", 0, genomeSize, "-p", 7, "-c", 0, tractlen, "-seeds", x1, x2, x3, "> " + runId + ".ms");
+	catn(ms_args);
+	system("ms", args=ms_args);
+
+	// read the ms output file
+	readMS(runId + ".ms");
+
+	c2 = clock();
+	c3 = c2 - c1;
+	writeFile(runId + ".time", runIdShort+"\tWF\tburnin\t"+c3, append=F);
+	sim.setValue("time_beg", clock());
+
+    sim.rescheduleScriptBlock(s1, start=N_generations, end=N_generations);
+}
+
+
+// Remove mutation on the 2nd chromosome
+// at each generation so we don't keep in memory useless mutations
+modifyChild()
+{
+	childGenome2.removeMutations();
+	return T;
+}
+
+// At each generation:
+// - Remove fixed mutations
+// - Perform gene conversion events
+late()
+{
+	// Remove fixed mutation
+	// (SLiM does it automatically for diploid,
+	// but for haploid, mutations are fixed at 0.5)
+	muts = sim.mutationsOfType(m1);
+	freqs = sim.mutationFrequencies(NULL, muts);
+	fixed_muts = muts[freqs == 0.5];
+	if (size(fixed_muts) > 0)
+		sim.subpopulations.genomes.removeMutations(fixed_muts, T);
+
+	// Gene Conversion event
+	// each individual has a proba of gene conversion per bp
+	if (GCrate > 0)
+	{
+		nindiv = rbinom(1, Ne, GCrate);
+		sim.setValue("nindiv", sim.getValue("nindiv")+nindiv); // logging purpose
+
+		// choose targets for gene conversion; each individual can only be a target
+		// once per generation, to more closely mirror the nonWF model's logic
+		GCtargets = p1.sampleIndividuals(nindiv, replace=F);
+
+		for (target in GCtargets)
+			geneConversion(target, tractlen);
+
+		sim.setValue("GC", sim.getValue("GC")+nindiv); // logging purpose
+	}
+}
+
+early()
+{
+	if (sim.generation % 1000 == 0)
+	{
+		cat(">> (" + sim.generation + ") GC : ");
+		catn(sim.getValue("GC"));
+	}
+	sim.setValue("GC", 0);
+}
+
+// At the end of the simulation, sample
+// 50 genomes and output it in ms format.
+s1 10000 late()
+{
+	// output only genomes with mutations
+	haploidGenomes = p1.individuals.genome1;
+
+	if (size(haploidGenomes) < sampleSize)
+		n_samples = size(haploidGenomes);
+	else
+		n_samples = sampleSize;
+
+	haploidGenomesSample = sample(haploidGenomes, n_samples);
+	haploidGenomesSample.outputMS(filePath=runId + ".msout");
+	catn("GC:  " + sim.getValue("GC"));
+	catn("n_sample:    " + n_samples);
+	catn("mean indiv with GC:  " + sim.getValue("nindiv")/sim.generation);
+	sim.setValue("time_end", clock());
+	c3 = sim.getValue("time_end") - sim.getValue("time_beg");
+	writeFile(runId + ".time", runIdShort+"\tWF\tfwd\t"+c3, append=T);
+
+	sim.simulationFinished();
+}
