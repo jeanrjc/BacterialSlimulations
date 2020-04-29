@@ -2,6 +2,9 @@
 
 This repository aims at gathering various SLiM scripts to help people simulate bacterial populations.
 
+SLiM implements two simulations frameworks, under the Wright-Fisher model or not.
+Depending on the framework, the simulation are handled differently.
+
 It contains the main scripts to run the simulations under a given SLiM model. 
 
 ## Dependencies
