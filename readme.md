@@ -10,11 +10,11 @@ It contains the main scripts to run the simulations under a given SLiM model.
 ## Dependencies
 
 - python3
-    - (msprime)[https://msprime.readthedocs.io/en/latest/]
+    - [msprime](https://msprime.readthedocs.io/en/latest/)
     - scikit-allel
     - pyslim
-- (SLiM 3)[https://messerlab.org/slim/]
-- (ms)[https://uchicago.app.box.com/s/l3e5uf13tikfjm7e1il1eujitlsjdx13]
+- [SLiM 3](https://messerlab.org/slim/)
+- [ms](https://uchicago.app.box.com/s/l3e5uf13tikfjm7e1il1eujitlsjdx13)
 
 SLiM and ms should be in your path.
 
@@ -28,7 +28,11 @@ Examples can be found under Params/.
 
 Then, just run:
 
-`$ bactslim.py path_to_modelparam.json`
+`$ ./scripts/bacterial_slimulation.py params/ConstantSize.json`
 
+## TODO
 
-
+- [ ] Make a model with selection
+- [ ] Make the script work for that
+- [ ] Clean the code from all stuff unnecessary (in sumstats)
+- [ ] add main script
