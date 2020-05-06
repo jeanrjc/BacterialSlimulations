@@ -259,10 +259,7 @@ def LD(haplotype, pos_vec, size_chr, circular=True, distance_bins=None, gaps_typ
 
         selected_snps.append(snp_pairs)
 
-
-    # Functions to aggregate the values within each distance bin
-    agg_bins = {"snp_dist": {"mean_dist":"mean"}, "r2":{"mean_r2":"mean", "Count":"count", "sem_r2":"sem"}}
-
+    
     ld = pd.DataFrame()
     for i, snps_pos in enumerate(selected_snps):
 
@@ -277,10 +274,12 @@ def LD(haplotype, pos_vec, size_chr, circular=True, distance_bins=None, gaps_typ
         sd["gap_id"] = i
         ld = pd.concat([ld, sd])
 
-    ld2 = ld.dropna().groupby("dist_group").agg(agg_bins)
-    ld2.columns = ld2.columns.get_level_values(1)
-    #ld2.dropna().plot(x="mean_dist", y="mean_r2", yerr="sem_r2")
-    return ld2[['mean_dist', 'mean_r2', 'Count', 'sem_r2']]
+    ld2 = ld.dropna().groupby("dist_group").agg(        
+            mean_dist=('snp_dist', 'mean'),        
+            mean_r2=('r2','mean'),        
+            Count=('r2','count'),        
+            sem_r2=('r2','sem') )
+    return ld2
 
 
 def tajimasD(haplotype, pos_vec=None, window=None):
