@@ -12,7 +12,7 @@ initialize()
 	}
 
 	initializeSLiMModelType("nonWF");
-	initializeTreeSeq();
+	initializeTreeSeq(); // record the Tree for recapitation and/or adding neutral mutations later
 	initializeMutationRate(0); // no neutral mutation in the forward simulation, we will add them later with msprime.
 	initializeMutationType("m1", 1.0, "f", 0.0); // neutral (unused)
 	initializeGenomicElementType("g1", m1, 1.0);
@@ -53,7 +53,7 @@ reproduction()
 
 	for (rep in 0:1)
 	{
-		is_HGT = rbinom(size(parents), 1, HGTrate); // should we divide by two 2 ?
+		is_HGT = rbinom(size(parents), 1, HGTrate);
 
 		for (i in seqAlong(parents))
 		{
@@ -63,8 +63,8 @@ reproduction()
 				pos_beg = rdunif(1, 0, genomeSize - 1);
 				tractLength = rgeom(1, 1.0 / tractlen);
 				pos_end = pos_beg + tractLength - 1;
-				if (pos_end == -1) {
-					pos_end = 1;
+				if (pos_end == -1) { // if pos_beg and tractLength are both 0
+					pos_end = 1;     // prevent the next mod operation to be negative which would crash later
 				}
 				else
 				{
@@ -104,8 +104,7 @@ early()
 	inds[ages == 0].fitnessScaling = Ne / juvenileCount;
 }
 
-// At the end of the simulation, sample
-// 50 genomes and output it in ms format.
+// At the end of the simulation, get the treeSeq
 s1 10000 late()
 {
 	sim.treeSeqOutput(runId + ".tree");
