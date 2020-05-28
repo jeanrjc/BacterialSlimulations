@@ -194,7 +194,7 @@ if __name__ == '__main__':
         recombination_rate = 1 / chr_size
 
     ## Main path
-    script_dir = os.path.realpath(__file__)
+    script_dir = os.path.dirname(os.path.realpath(__file__))
     root_out_dir = os.path.join(args.outdir, params["model"])
     
     ##################
