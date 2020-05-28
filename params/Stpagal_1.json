@@ -1,0 +1,15 @@
+{
+    "model": "ConstantSize",
+    "scenario": "agal_1",
+    "type": "both",
+    "N_replicat": 100,
+    "rescaling_factor": 100,
+
+    "sample_size": 20,
+    "Ne": 140000,
+    "mu": 1.53e-9,
+    "rho": 1.53e-9,
+    "tract_length": 122000,
+    "chr_size":2e6,
+    "N_generations": 20000
+}
