@@ -64,8 +64,8 @@ def slim(script, run_id, out_dir="."):
                 logging.error("Slim command: {}\nfailed with error {}".format(Slim_cmd2, ret))
                 sys.exit(ret)
     except Exception as e:
-        logging.error("Slim failed: {}".format(e))
-        sys.exit(0)
+        logging.error("Slim failed for run {}: {}".format(run_id, e))
+        sys.exit(1)
 
 
 def run_nonWF(run_id, out_dir_nWF, file_suff=""):
@@ -75,7 +75,7 @@ def run_nonWF(run_id, out_dir_nWF, file_suff=""):
     os.makedirs(out_dir_nWF, exist_ok=True)
 
     if not os.path.isfile(os.path.join(out_dir_nWF, run_id + ".npz")):
-        slim(os.path.join(script_dir,
+        slim(os.path.join(bactslim_dir,
                           "models",
                           f"{params['model']}",
                           f"nonWF_{params['model']}.slim"),
@@ -102,7 +102,7 @@ def run_WF(run_id, out_dir_WF, file_suff=""):
     os.makedirs(out_dir_WF, exist_ok=True)
     logging.debug("in run WF")
     if not os.path.isfile(os.path.join(out_dir_WF, run_id+".npz")):
-        slim(os.path.join(script_dir,
+        slim(os.path.join(bactslim_dir,
                           "models",
                           f"{params['model']}",
                           f"WF_{params['model']}.slim"),
@@ -195,6 +195,7 @@ if __name__ == '__main__':
 
     ## Main path
     script_dir = os.path.dirname(os.path.realpath(__file__))
+    bactslim_dir = os.path.abspath(os.path.join(script_dir, ".."))
     root_out_dir = os.path.join(args.outdir, params["model"])
     
     ##################
