@@ -167,7 +167,7 @@ if __name__ == '__main__':
                         format="%(asctime)s; %(levelname)s;  %(message)s",
                         datefmt="%d/%m/%Y %H:%M:%S")
 
-    logging.debug(f"{args.rescaling_factor}")
+    logging.debug(f"{params['rescaling_factor']}")
 
 
     logging.debug(f"rescaling parameters by a factor of {params['rescaling_factor']}")
@@ -191,8 +191,13 @@ if __name__ == '__main__':
                         (every indiv will endure gene conversion at each generation)""")
         recombination_rate = 1 / chr_size
 
-    os.makedirs(params["model"], exist_ok=True)
-    copyfile(args.config, os.path.join(params["model"],
+    root_out_dir = os.path.join(args.outdir, params["model"])
+    
+    ##################
+    # Output params  #
+    ##################
+    os.makedirs(root_out_dir, exist_ok=True)
+    copyfile(args.config, os.path.join(root_out_dir,
                                        f"params_{params['model']}-{params['rescaling_factor']}_{params['scenario']}"))
 
 
@@ -205,12 +210,12 @@ if __name__ == '__main__':
     scen_id = "{model}-{rf}_{scenario}".format(model=params["model"],
                                                          rf=params["rescaling_factor"],
                                                          scenario=params["scenario"])
-    out_dir_WF = os.path.join(args.outdir,
-                                "{model}/{type}/{scen_id}".format(model=params["model"],
+    out_dir_WF = os.path.join(root_out_dir,
+                              "{type}/{scen_id}".format(model=params["model"],
                                                                 type="WF",
                                                                 scen_id=scen_id))
-    out_dir_nWF = os.path.join(args.outdir,
-                                "{model}/{type}/{scen_id}".format(model=params["model"],
+    out_dir_nWF = os.path.join(root_out_dir,
+                                "{type}/{scen_id}".format(model=params["model"],
                                                                   type="nonWF",
                                                                   scen_id=scen_id))
 
