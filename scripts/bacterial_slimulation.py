@@ -65,7 +65,7 @@ def slim(script, run_id, out_dir="."):
                 sys.exit(ret)
     except Exception as e:
         logging.error("Slim failed: {}".format(e))
-        sys.exit(1)
+        sys.exit(0)
 
 
 def run_nonWF(run_id, out_dir_nWF, file_suff=""):
