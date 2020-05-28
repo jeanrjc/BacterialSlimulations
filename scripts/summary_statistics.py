@@ -122,7 +122,7 @@ def split_simid(simid):
     """
 
     try:
-        model, scenario, replicat = re.findall("^([\w\d\-]+)_(\w+)_(\d+).*", simid)[0]
+        model, scenario, replicat = re.findall("^([\w\d\-]+)_([\w\d\-]+)_(\d+).*", simid)[0]
     except IndexError:
         raise NameError("The name of the simulation should be of the form `model-A_N_X.extension`")
     return model, scenario, int(replicat), "{}_{}".format(scenario, replicat)
