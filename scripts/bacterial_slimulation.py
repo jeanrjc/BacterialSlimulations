@@ -39,7 +39,7 @@ def slim(script, run_id, out_dir="."):
     None
 
     """
-    slim_bin = distutils.spawn.find_executable("slim3")
+    slim_bin = distutils.spawn.find_executable("slim")
     if slim_bin == None:
         raise OSError("Slim executable not found")
     try:
