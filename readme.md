@@ -15,7 +15,7 @@ Just create a conda environment by using the following command once you're in th
 
 It will install the following dependencies for you: 
 
-- python 3.7, with in specifically:
+- python 3.7, with, specifically:
     - [msprime](https://msprime.readthedocs.io/en/latest/)
     - [pyslim](https://pyslim.readthedocs.io/)
     - [scikit-allel](scikit-allel.readthedocs.io/)
@@ -34,7 +34,33 @@ Examples can be found under params/.
 
 Then, just run:
 
-`$ ./scripts/bacterial_slimulation.py params/ConstantSize.json`
+    $ ./scripts/bacterial_slimulation.py params/ConstantSize.json
+
+It will create a folder in your current directory named `ConstantSize` (after the `model`'s parameter in the `.json`'s file) with the following architecture :
+
+    ConstantSize
+    ├── nonWF
+    │   ├── ConstantSize-100_myScenario
+    │   │   ├── ConstantSize-100_myScenario_1.npz
+    │   │   ├── ConstantSize-100_myScenario_1.out
+    │   │   ├── ConstantSize-100_myScenario_1.time
+    │   │   ├── ConstantSize-100_myScenario_1.tree
+    │   │   ├── ...
+    │   └── sumstats
+    │       ├── ConstantSize-100_myScenario.ld
+    │       ├── ConstantSize-100_myScenario.sel
+    │       ├── ConstantSize-100_myScenario.sfs
+    └── WF
+        ├── ConstantSize-100_myScenario
+        │   ├── ConstantSize-100_myScenario_1.npz
+        │   ├── ConstantSize-100_myScenario_1.out
+        │   ├── ConstantSize-100_myScenario_1.time
+        │   ├── ...
+        └── sumstats
+            ├── ConstantSize-100_myScenario.ld
+            ├── ConstantSize-100_myScenario.sel
+            ├── ConstantSize-100_myScenario.sfs
+
 
 ## TODO
 
