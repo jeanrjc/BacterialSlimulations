@@ -123,12 +123,12 @@ def runner(param_type, run_id, out_dir_nWF, out_dir_WF):
     if param_type in ["both", "nonWF"]:
         logging.info(f"> Starting nonWF simulations for {run_id}")
         out_dir_nWF = run_nonWF(run_id, out_dir_nWF, file_suff="")
-        logging.info(f"< nonWF {run_id} simulations done")
+        logging.debug(f"< nonWF {run_id} simulations done")
 
     if param_type in ["both", "WF"]:
         logging.info(f"> Starting WF simulations for {run_id}")
         out_dir_WF = run_WF(run_id, out_dir_WF, file_suff="")
-        logging.info(f"< WF {run_id} simulations done")
+        logging.debug(f"< WF {run_id} simulations done")
 
 def worker(param):
     runner(**param)
@@ -241,13 +241,9 @@ if __name__ == '__main__':
         res = pool.map_async(worker, all_rep_param)
         pool.close()
         pool.join()
-    logging.info("done")
+    logging.info("Done\nComputing sumstats...")
 
     if params["type"] in ["both", "WF"]:
         ss.do_sum_stats(out_dir_WF, ld_kws={"circular":True}, size_chr=chr_size, label="WF")
-        # ss.do_sum_stats(out_dir_WFgs, ld_kws={"circular":True}, size_chr=chr_size, label="WFGS")
     if params["type"] in ["both", "nonWF"]:
         ss.do_sum_stats(out_dir_nWF, ld_kws={"circular":True}, size_chr=chr_size, label="nonWF")
-        # ss.do_sum_stats(out_dir_nWFv, ld_kws={"circular":True}, size_chr=chr_size, label="nonWF_var")
-        # ss.do_sum_stats(out_dir_nWFv2, ld_kws={"circular":True}, size_chr=chr_size, label="nonWF_var2")
-        # ss.do_sum_stats(out_dir_nWFv3, ld_kws={"circular":True}, size_chr=chr_size, label="nonWF_var3")
