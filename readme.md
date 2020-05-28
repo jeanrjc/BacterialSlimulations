@@ -75,4 +75,5 @@ Replicates are available within each scenario's folder and contains different ty
 - [ ] add main script (with only the parser) so basically, refactor slim's wrapper. 
 - [ ] add possibility to launch automatically different scenario if in the param file, there are different value for a given parameter (e.g. `"rescaling_factor": 100, 50, 30` will generate 3 scenarios with the 3 different rescaling factor)
 - [ ] Give more flexibility on the different output file. 
+- [ ] propose option to set path for models
 

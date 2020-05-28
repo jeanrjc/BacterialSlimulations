@@ -75,7 +75,8 @@ def run_nonWF(run_id, out_dir_nWF, file_suff=""):
     os.makedirs(out_dir_nWF, exist_ok=True)
 
     if not os.path.isfile(os.path.join(out_dir_nWF, run_id + ".npz")):
-        slim(os.path.join("models",
+        slim(os.path.join(script_dir,
+                          "models",
                           f"{params['model']}",
                           f"nonWF_{params['model']}.slim"),
              run_id,
@@ -101,7 +102,8 @@ def run_WF(run_id, out_dir_WF, file_suff=""):
     os.makedirs(out_dir_WF, exist_ok=True)
     logging.debug("in run WF")
     if not os.path.isfile(os.path.join(out_dir_WF, run_id+".npz")):
-        slim(os.path.join("models",
+        slim(os.path.join(script_dir,
+                          "models",
                           f"{params['model']}",
                           f"WF_{params['model']}.slim"),
              run_id,
@@ -191,6 +193,8 @@ if __name__ == '__main__':
                         (every indiv will endure gene conversion at each generation)""")
         recombination_rate = 1 / chr_size
 
+    ## Main path
+    script_dir = os.path.realpath(__file__)
     root_out_dir = os.path.join(args.outdir, params["model"])
     
     ##################
