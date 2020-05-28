@@ -144,26 +144,15 @@ if __name__ == '__main__':
                          metavar='INFO',
                          help='Amount of log info: DEBUG, [INFO], WARNING, ERROR, CRITICAL')
 
-    parser.add_argument('-rf', '--rescaling_factor',
-                        help="how to rescale the population parameters",
-                        type=int,
-                        default=None)
-    parser.add_argument('-n', '--nrep',
-                    help="number of replicates",
-                    type=int,
-                    default=None)
-
     parser.add_argument('--cpu',
                     help="Number of cpu to run the replicates. By default, all available",
                     type=int,
                     default=cpu_count())
 
-
-
     parser.add_argument('--outdir',
                         help="""Output directory.
-                        Results will under [outdir]/model/rf/, where
-                        mode and rf (rescaling factor) are defined in the config file.
+                        Results will under [outdir]/model/, where
+                        model is defined in the config file.
                         Simulations will not be rerun if the corresponding output file already exists.""",
                         type=str,
                         default=".")
@@ -179,11 +168,6 @@ if __name__ == '__main__':
                         datefmt="%d/%m/%Y %H:%M:%S")
 
     logging.debug(f"{args.rescaling_factor}")
-
-    if args.rescaling_factor != None:
-        params["rescaling_factor"] = args.rescaling_factor
-    if args.nrep != None:
-        params["N_replicat"] = args.nrep
 
 
     logging.debug(f"rescaling parameters by a factor of {params['rescaling_factor']}")
