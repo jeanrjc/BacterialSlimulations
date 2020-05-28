@@ -22,7 +22,6 @@ It will install the following dependencies for you:
 - [SLiM 3](https://messerlab.org/slim/)
 - [ms](https://uchicago.app.box.com/s/l3e5uf13tikfjm7e1il1eujitlsjdx13)
 
-SLiM and ms should be in your path.
 
 ## Quickstart
 
@@ -61,9 +60,19 @@ It will create a folder in your current directory named `ConstantSize` (after th
             ├── ConstantSize-100_myScenario.sel
             ├── ConstantSize-100_myScenario.sfs
 
+With a subfolder for WF and nonWF types of simulation. 
+Within each of these folders, there will be one folder per scenario (as per the `scenario:` line in the parameter's file.) 
+It is thus possible to simulate different scenario within the same model, and they will be stored in the same model's scenario. 
+Replicates are available within each scenario's folder and contains different types of file:
+- `.out`: the output of SLiM
+- `.npz`: the snp matrix in numpy compressed file format
+- `.time`: the timing of the burnin and forward part
+- `.tree`: The tree sequence before recapitation, in the nonWF version. 
 
 ## TODO
 
 - [ ] Clean the code from all stuff unnecessary (in sumstats)
-- [ ] add main script ?
+- [ ] add main script (with only the parser) so basically, refactor slim's wrapper. 
+- [ ] add possibility to launch automatically different scenario if in the param file, there are different value for a given parameter (e.g. `"rescaling_factor": 100, 50, 30` will generate 3 scenarios with the 3 different rescaling factor)
+- [ ] Give more flexibility on the different output file. 
 
