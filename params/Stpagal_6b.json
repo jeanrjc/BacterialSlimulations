@@ -1,5 +1,5 @@
 {
-    "script": "Bacterial_population",
+    "model": "ConstantSize",
     "scenario": "agal_6b",
     "type": "both",
     "N_replicat": 15,
