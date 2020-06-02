@@ -7,6 +7,10 @@ Depending on the framework, the simulation are handled differently.
 
 It contains the main scripts to run the simulations under a given SLiM model. 
 
+## Branch with data used for running experiments
+
+This branch contains, the different parameters' file under `params`'s folder, used for running experiments.
+
 ## Dependencies
 
 Just create a conda environment by using the following command once you're in this directory:
