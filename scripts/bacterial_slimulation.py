@@ -187,6 +187,7 @@ if __name__ == '__main__':
         N_generations = int(params["N_generations"] / params["rescaling_factor"])
     except KeyError:
         N_generations = 1000
+    logging.debug(f"Ne: {params['N_generations']} -> {N_generations}")
     if recombination_rate * chr_size > 1:
         logging.warning("""recombination rate too high given chromosome size.
                         >>> *Recombination rate* is modified to 1/chr_size
