@@ -86,7 +86,7 @@ def run_nonWF(run_id, out_dir_nWF):
         t1 = time.time()
  
         tree = os.path.join(out_dir_nWF, run_id + ".tree")
-        snp_mat, pos = recap.recapitate(tree, sample_size, recombination_rate, mutation_rate, Ne)
+        snp_mat, pos = recap.recapitate(tree, sample_size, recombination_rate, mutation_rate, Ne, gcBurnin)
         logging.debug("recap done")
         np.savez_compressed(os.path.join(out_dir_nWF, run_id + ".npz"),
                             SNP=snp_mat,
