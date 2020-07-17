@@ -126,7 +126,7 @@ initialize()
 	c1 = clock();
 
 	// sublaunch ms to generate initial state
-	ms_args = c(asInteger(Ne), 1, "-t", Theta * genomeSize, "-r", 0, genomeSize, "-p", 7, "-c", 0, tractlen, "-seeds", x1, x2, x3, "> " + runId + ".ms");
+	ms_args = c(asInteger(Ne), 1, "-t", Theta * genomeSize, "-r", 0, genomeSize, "-p", 7, "-c", gcBurnin, tractlen, "-seeds", x1, x2, x3, "> " + runId + ".ms");
 	catn(ms_args);
 	system("ms", args=ms_args);
 
