@@ -209,19 +209,19 @@ def LD(haplotype, pos_vec, size_chr, circular=True, distance_bins=None, gaps_typ
     gaps_interval = (2 ** np.arange(0, np.log2(n_SNP), 1)).astype(int) # log2 scales of intervals
     if gaps_type.lower() == "long":
         gaps_interval = np.unique(np.concatenate([gaps_interval,
-                                                  np.array(list(n_SNP - gaps_interval)[::-1])])).astype(int)
+                                                np.array(list(n_SNP//2 - gaps_interval[:len(gaps_interval)//2])[::-1]).astype(int),
+                                                np.array(list(n_SNP - gaps_interval)[::-1])])).astype(int)
     else:
         if gaps_type.lower() != "short":
             logging.warning("gaps should be either `short` or `long`. Using short instead of f{gaps_type}")
 
     selected_snps = []
-    for gap in gaps_interval:
+    for gi, gap in enumerate(gaps_interval):
 
         if circular:
             max_value = n_SNP
         else:
             max_value = n_SNP - gap
-
         if max_value < min_SNP_pairs: # min_SNP_pairs : min number of SNP pairs to consider.
             # if not many possible pairs possible, just take them all directly,
             # instead of reaching that number after many more random trials
@@ -229,18 +229,24 @@ def LD(haplotype, pos_vec, size_chr, circular=True, distance_bins=None, gaps_typ
             snp_pairs = np.unique([((snps[i] + i) % n_SNP, (snps[i + 1] + i) % n_SNP) for i in range(len(snps) - 1)], axis=0)
             snp_pairs = np.concatenate([(snp_pairs + i)%n_SNP  for i in range(max_value)], axis=0)
         else:
-            snps = np.arange(0, n_SNP, gap) + np.random.randint(0, (n_SNP - 1) % gap + 1)  # adding a random start (+1, bc 2nd bound in randint is exlusive)
-            # non overlapping contiguous pairs
-            # snps=[ 196, 1220, 2244] becomes
-            # snp_pairs=[(196, 1220), (1221, 2245)]
-            snp_pairs = np.unique([((snps[i] + i) % n_SNP, (snps[i + 1] + i) % n_SNP) for i in range(len(snps) - 1)], axis=0)
-
-            # If we don't have enough pairs (typically when gap is large), we add a random rotation until we have at least 300)
-            #count = 0
-
             if not circular:
+                snps = np.arange(0, n_SNP, gap) + np.random.randint(0, (n_SNP - 1) % gap + 1)  # adding a random start (+1, bc 2nd bound in randint is exlusive)
+                # non overlapping contiguous pairs
+                # snps=[ 196, 1220, 2244] becomes
+                # snp_pairs=[(196, 1220), (1221, 2245)]
+                snp_pairs = np.unique([((snps[i] + i) % n_SNP, (snps[i + 1] + i) % n_SNP) for i in range(len(snps) - 1)], axis=0)
+
+                # If we don't have enough pairs (typically when gap is large), we add a random rotation until we have at least 300)
+                #count = 0
                 # remove pairs that are over the edges
                 snp_pairs = snp_pairs[snp_pairs[:, 0] < snp_pairs[:, 1]]
+            else:
+                snps = np.arange(0, n_SNP, gap) + np.random.randint(0, (n_SNP - 1))  # adding a random start
+                # non overlapping contiguous pairs
+                # snps=[ 196, 1220, 2244] becomes
+                # snp_pairs=[(196, 1220), (1221, 2245)]
+                snp_pairs = np.unique([((snps[i] + i) % n_SNP, (snps[i + 1] + i) % n_SNP) for i in range(len(snps) - 1)], axis=0)
+
             last_pair = snp_pairs[-1]
 
             while len(snp_pairs) < min(min_SNP_pairs, max_value):
@@ -251,7 +257,7 @@ def LD(haplotype, pos_vec, size_chr, circular=True, distance_bins=None, gaps_typ
                 shift =  np.random.randint(1, n_SNP) % n_SNP
                 new_pair = (last_pair + shift) % n_SNP
                 snp_pairs = np.unique(np.concatenate([snp_pairs,
-                                                      new_pair.reshape(1, 2) ]), axis=0)
+                                                    new_pair.reshape(1, 2) ]), axis=0)
                 last_pair = new_pair
 
                 if not circular:
@@ -259,12 +265,13 @@ def LD(haplotype, pos_vec, size_chr, circular=True, distance_bins=None, gaps_typ
 
         selected_snps.append(snp_pairs)
 
-    
     ld = pd.DataFrame()
     for i, snps_pos in enumerate(selected_snps):
 
         if circular :
-            sd = pd.DataFrame(((np.diff(pos_vec[snps_pos]) % size_chr))%(size_chr//2), columns=["snp_dist"]) # %size_chr/2 because max distance btw 2 SNP is size_chr/2
+            pos_i = pos_vec[snps_pos]
+            min_dist = np.array([min(np.diff(pi)%size_chr, np.diff(pi[::-1])%size_chr) for pi in pos_i])%size_chr/2
+            sd = pd.DataFrame(min_dist, columns=["snp_dist"]) # %size_chr/2 because max distance btw 2 SNP is size_chr/2
         else:
             sd = pd.DataFrame((np.diff(pos_vec[snps_pos])), columns=["snp_dist"])
 
@@ -279,6 +286,7 @@ def LD(haplotype, pos_vec, size_chr, circular=True, distance_bins=None, gaps_typ
             mean_r2=('r2','mean'),        
             Count=('r2','count'),        
             sem_r2=('r2','sem') )
+
     return ld2
 
 
