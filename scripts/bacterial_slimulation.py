@@ -56,6 +56,7 @@ def slim(script, run_id, out_dir="."):
                         "-d", """"genomeSize={}" """.format(int(chr_size)),
                         "-d", """"sampleSize={}" """.format(int(sample_size)),
                         "-d", """"N_generations={}" """.format(int(N_generations)),
+                        "-d", """"gcBurnin={}" """.format(gcBurnin),
                         script]
             Slim_cmd2 = " ".join(Slim_cmd)
             logging.debug("Calling Slim:\n{}".format(Slim_cmd2))
@@ -68,7 +69,7 @@ def slim(script, run_id, out_dir="."):
         sys.exit(1)
 
 
-def run_nonWF(run_id, out_dir_nWF, file_suff=""):
+def run_nonWF(run_id, out_dir_nWF):
     t1 = time.time()
     logging.debug("in run nonWF")
 
@@ -85,8 +86,8 @@ def run_nonWF(run_id, out_dir_nWF, file_suff=""):
         t1 = time.time()
  
         tree = os.path.join(out_dir_nWF, run_id + ".tree")
-        snp_mat, pos = recap.recapitate(tree, sample_size, recombination_rate, mutation_rate, Ne)
-
+        snp_mat, pos = recap.recapitate(tree, sample_size, recombination_rate, mutation_rate, Ne, gcBurnin)
+        logging.debug("recap done")
         np.savez_compressed(os.path.join(out_dir_nWF, run_id + ".npz"),
                             SNP=snp_mat,
                             POS=pos)
@@ -97,7 +98,7 @@ def run_nonWF(run_id, out_dir_nWF, file_suff=""):
             timefile.write(f"{run_id}\tnonWF\tburnin\t{time_nWF_recap}\n")
     return out_dir_nWF
 
-def run_WF(run_id, out_dir_WF, file_suff=""):
+def run_WF(run_id, out_dir_WF):
 
     os.makedirs(out_dir_WF, exist_ok=True)
     logging.debug("in run WF")
@@ -122,12 +123,12 @@ def runner(param_type, run_id, out_dir_nWF, out_dir_WF):
 
     if param_type in ["both", "nonWF"]:
         logging.info(f"> Starting nonWF simulations for {run_id}")
-        out_dir_nWF = run_nonWF(run_id, out_dir_nWF, file_suff="")
+        out_dir_nWF = run_nonWF(run_id, out_dir_nWF)
         logging.debug(f"< nonWF {run_id} simulations done")
 
     if param_type in ["both", "WF"]:
         logging.info(f"> Starting WF simulations for {run_id}")
-        out_dir_WF = run_WF(run_id, out_dir_WF, file_suff="")
+        out_dir_WF = run_WF(run_id, out_dir_WF)
         logging.debug(f"< WF {run_id} simulations done")
 
 def worker(param):
@@ -183,9 +184,11 @@ if __name__ == '__main__':
     sample_size = int(params["sample_size"])
     tractlen = params["tract_length"]
     chr_size = int(params["chr_size"])
+
     try:
         N_generations = int(params["N_generations"] / params["rescaling_factor"])
     except KeyError:
+        logging.warning("Number fo generations (N_generations) not set, using 1000")
         N_generations = 1000
     logging.debug(f"Ne: {params['N_generations']} -> {N_generations}")
     if recombination_rate * chr_size > 1:
@@ -193,6 +196,19 @@ if __name__ == '__main__':
                         >>> *Recombination rate* is modified to 1/chr_size
                         (every indiv will endure gene conversion at each generation)""")
         recombination_rate = 1 / chr_size
+
+    # TODO: Document GC_in_burnin
+    try:
+        if params["GC_in_burnin"] == 1: # if 1, use actual rec rate
+            gcBurnin = recombination_rate # Already rescaled
+        elif 0 < params["GC_in_burnin"] < 1: # other rate, rescaled then
+            gcBurnin = params["GC_in_burnin"] * params["rescaling_factor"]
+        elif params["GC_in_burnin"] > 1:
+            logging.error("Param GC_in_burnin should be within [0, 1]")
+        else: # if 0 
+            gcBurnin = 0
+    except KeyError: # not specified
+        gcBurnin = 0
 
     ## Main path
     script_dir = os.path.dirname(os.path.realpath(__file__))

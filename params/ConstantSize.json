@@ -1,8 +1,8 @@
 {
     "model": "ConstantSize",
     "scenario": "myScenario",
-    "type": "both",
-    "N_replicat": 6,
+    "type": "nonWF",
+    "N_replicat": 4,
     "rescaling_factor": 100,
 
     "sample_size": 20,
@@ -11,5 +11,5 @@
     "rho": 1.53e-9,
     "tract_length": 122000,
     "chr_size":2e6,
-    "N_generations": 30000
+    "N_generations": 20000
 }

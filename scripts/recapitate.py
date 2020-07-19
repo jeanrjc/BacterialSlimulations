@@ -40,7 +40,7 @@ def sample_treeseq(ts, n):
     ts_samp_sts = pyslim.SlimTreeSequence(ts_samp)
     return ts_samp_sts
 
-def recapitate(treesfile, sample_size, recombination_rate, mutation_rate, Ne):
+def recapitate(treesfile, sample_size, recombination_rate, mutation_rate, Ne, gcBurnin):
 
         # load trees with pyslim
         ts = pyslim.load(treesfile)
@@ -54,7 +54,7 @@ def recapitate(treesfile, sample_size, recombination_rate, mutation_rate, Ne):
 
         # discard second genomes (diploids) from the tree.
         #ts_haploid = ts.simplify(samples=[ind.nodes[0] for ind in ts.individuals()])
-        ts_recap = ts.recapitate(recombination_rate=1e-20, 
+        ts_recap = ts.recapitate(recombination_rate=gcBurnin + 1e-20, # can't put 0 here. 
                                  Ne=Ne)
                                  #population_configurations=[msprime.PopulationConiguration(initial_size=Ne)])
         
