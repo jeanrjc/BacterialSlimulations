@@ -1,6 +1,6 @@
 {
     "model": "ConstantSize",
-    "scenario": "GCburnin_r2g10",
+    "scenario": "GCburnin_r2g10b",
     "type": "both",
     "N_replicat": 100,
     "rescaling_factor": 25,
