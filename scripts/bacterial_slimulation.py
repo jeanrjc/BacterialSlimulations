@@ -261,6 +261,12 @@ if __name__ == '__main__':
     logging.info("Done\nComputing sumstats...")
 
     if params["type"] in ["both", "WF"]:
-        ss.do_sum_stats(out_dir_WF, ld_kws={"circular":True}, size_chr=chr_size, label="WF")
+        try:
+            ss.do_sum_stats(out_dir_WF, ld_kws={"circular":True}, size_chr=chr_size, label="WF")
+        except:
+            logging.error("Error while computing sumstats for WF")
     if params["type"] in ["both", "nonWF"]:
-        ss.do_sum_stats(out_dir_nWF, ld_kws={"circular":True}, size_chr=chr_size, label="nonWF")
+        try:
+            ss.do_sum_stats(out_dir_nWF, ld_kws={"circular":True}, size_chr=chr_size, label="nonWF")
+        except:
+            logging.error("Error while computing sumstats for nonWF")
