@@ -122,14 +122,21 @@ def run_WF(run_id, out_dir_WF):
 def runner(param_type, run_id, out_dir_nWF, out_dir_WF):
 
     if param_type in ["both", "nonWF"]:
-        logging.info(f"> Starting nonWF simulations for {run_id}")
-        out_dir_nWF = run_nonWF(run_id, out_dir_nWF)
-        logging.debug(f"< nonWF {run_id} simulations done")
-
+        try:
+            logging.info(f"> Starting nonWF simulations for {run_id}")
+            out_dir_nWF = run_nonWF(run_id, out_dir_nWF)
+            logging.debug(f"< nonWF {run_id} simulations done")
+        except:
+            logging.error("Error in nonWF simulations")
+            pass
     if param_type in ["both", "WF"]:
-        logging.info(f"> Starting WF simulations for {run_id}")
-        out_dir_WF = run_WF(run_id, out_dir_WF)
-        logging.debug(f"< WF {run_id} simulations done")
+        try:
+            logging.info(f"> Starting WF simulations for {run_id}")
+            out_dir_WF = run_WF(run_id, out_dir_WF)
+            logging.debug(f"< WF {run_id} simulations done")
+        except:
+            logging.error("Error in WF simulations")
+            pass
 
 def worker(param):
     runner(**param)
