@@ -1,0 +1,16 @@
+{
+    "model": "ConstantSize",
+    "scenario": "noRec_g20",
+    "type": "both",
+    "N_replicat": 100,
+    "rescaling_factor": 25,
+
+    "sample_size": 20,
+    "Ne": 140000,
+    "mu": 1.53e-9,
+    "rho": 0,
+    "GC_in_burnin": 0,
+    "tract_length": 12200,
+    "chr_size":2e6,
+    "N_generations": 20000
+}
