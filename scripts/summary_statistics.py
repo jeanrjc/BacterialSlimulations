@@ -193,15 +193,15 @@ def LD(haplotype, pos_vec, size_chr, circular=True, distance_bins=None, gaps_typ
 
     if isinstance(distance_bins, type(None)) or isinstance(distance_bins, int):
         if isinstance(distance_bins, int):
-            n_bins = distance_bins - 1
+            n_bins = distance_bins - 3
         else:
-            n_bins = 19
+            n_bins = 17
         if circular:
             distance_bins = np.logspace(2, np.log10(size_chr//2), n_bins)
-            distance_bins = np.insert(distance_bins, 0, [0])
+            distance_bins = np.insert(distance_bins, 0, [0, 25, 50, 75]) # add bins at short distances
         else:
             distance_bins = np.logspace(2, np.log10(size_chr), n_bins)
-            distance_bins = np.insert(distance_bins, 0, [0])
+            distance_bins = np.insert(distance_bins, 0, [0, 25, 50, 75])
 
     n_SNP, n_samples = haplotype.shape
 
