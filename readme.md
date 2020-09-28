@@ -43,11 +43,10 @@ It will create a folder in your current directory named `ConstantSize` (after th
     │   │   ├── ConstantSize-100_myScenario_1.npz
     │   │   ├── ConstantSize-100_myScenario_1.out
     │   │   ├── ConstantSize-100_myScenario_1.time
-    │   │   ├── ConstantSize-100_myScenario_1.tree
+    │   │   ├── ConstantSize-100_myScenario_1_final.trees
     │   │   ├── ...
     │   └── sumstats
     │       ├── ConstantSize-100_myScenario.ld
-    │       ├── ConstantSize-100_myScenario.sel
     │       ├── ConstantSize-100_myScenario.sfs
     └── WF
         ├── ConstantSize-100_myScenario
@@ -57,7 +56,6 @@ It will create a folder in your current directory named `ConstantSize` (after th
         │   ├── ...
         └── sumstats
             ├── ConstantSize-100_myScenario.ld
-            ├── ConstantSize-100_myScenario.sel
             ├── ConstantSize-100_myScenario.sfs
 
 With a subfolder for WF and nonWF types of simulation. 
