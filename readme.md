@@ -65,7 +65,7 @@ Within each of these folders, there will be one folder per scenario (as per the 
 It is thus possible to simulate different scenario within the same model, and they will be stored in the same model's scenario. 
 Replicates are available within each scenario's folder and contains different types of file:
 - `.out`: the output of SLiM
-- `.npz`: the snp matrix in numpy compressed file format
+- `.npz`: the snp matrix an position vector in numpy compressed file format
 - `.time`: the timing of the burnin and forward part
-- `.tree`: The tree sequence before recapitation, in the nonWF version. 
+- `_final.trees`: The tree sequence after recapitation, in the nonWF version. 
 

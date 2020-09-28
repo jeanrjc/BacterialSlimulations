@@ -82,7 +82,7 @@ def recapitate(treesfile, sample_size, recombination_rate, mutation_rate, Ne, gc
         snp_mat = genotype_matrix.T
         pos = np.round(ts_mutated.tables.asdict()["sites"]["position"]).astype(int)
 
-        return snp_mat, pos
+        return snp_mat, pos, ts_mutated
 
 # # Without actual recapitation
 # def fake_recapitate(treesfile, sample_size, recombination_rate, mutation_rate, Ne):

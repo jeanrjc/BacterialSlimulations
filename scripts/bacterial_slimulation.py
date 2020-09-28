@@ -85,12 +85,14 @@ def run_nonWF(run_id, out_dir_nWF):
         time_nWF_fw = time.time() - t1
         t1 = time.time()
  
-        tree = os.path.join(out_dir_nWF, run_id + ".tree")
-        snp_mat, pos = recap.recapitate(tree, sample_size, recombination_rate, mutation_rate, Ne, gcBurnin)
+        tree = os.path.join(out_dir_nWF, run_id + ".trees")
+        snp_mat, pos, tree_end = recap.recapitate(tree, sample_size, recombination_rate, mutation_rate, Ne, gcBurnin)
         logging.debug("recap done")
         np.savez_compressed(os.path.join(out_dir_nWF, run_id + ".npz"),
                             SNP=snp_mat,
                             POS=pos)
+        tree_end.dump(os.path.join(out_dir_nWF, run_id + "_final.trees"))
+        os.remove(os.path.join(out_dir_nWF, run_id + ".trees"))
         time_nWF_recap = time.time() - t1
 
         with open(os.path.join(out_dir_nWF, run_id + ".time"), mode='w') as timefile:
