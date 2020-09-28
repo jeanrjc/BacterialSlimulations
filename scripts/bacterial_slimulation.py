@@ -66,7 +66,7 @@ def slim(script, run_id, out_dir="."):
                 sys.exit(ret)
     except Exception as e:
         logging.error("Slim failed for run {}: {}".format(run_id, e))
-        sys.exit(1)
+        #sys.exit(1)
 
 
 def run_nonWF(run_id, out_dir_nWF):
@@ -122,14 +122,21 @@ def run_WF(run_id, out_dir_WF):
 def runner(param_type, run_id, out_dir_nWF, out_dir_WF):
 
     if param_type in ["both", "nonWF"]:
-        logging.info(f"> Starting nonWF simulations for {run_id}")
-        out_dir_nWF = run_nonWF(run_id, out_dir_nWF)
-        logging.debug(f"< nonWF {run_id} simulations done")
-
+        try:
+            logging.info(f"> Starting nonWF simulations for {run_id}")
+            out_dir_nWF = run_nonWF(run_id, out_dir_nWF)
+            logging.debug(f"< nonWF {run_id} simulations done")
+        except:
+            logging.error("Error in nonWF simulations")
+            pass
     if param_type in ["both", "WF"]:
-        logging.info(f"> Starting WF simulations for {run_id}")
-        out_dir_WF = run_WF(run_id, out_dir_WF)
-        logging.debug(f"< WF {run_id} simulations done")
+        try:
+            logging.info(f"> Starting WF simulations for {run_id}")
+            out_dir_WF = run_WF(run_id, out_dir_WF)
+            logging.debug(f"< WF {run_id} simulations done")
+        except:
+            logging.error("Error in WF simulations")
+            pass
 
 def worker(param):
     runner(**param)
@@ -190,6 +197,7 @@ if __name__ == '__main__':
     except KeyError:
         logging.warning("Number fo generations (N_generations) not set, using 1000")
         N_generations = 1000
+    logging.debug(f"Ne: {params['N_generations']} -> {N_generations}")
     if recombination_rate * chr_size > 1:
         logging.warning("""recombination rate too high given chromosome size.
                         >>> *Recombination rate* is modified to 1/chr_size
@@ -260,6 +268,12 @@ if __name__ == '__main__':
     logging.info("Done\nComputing sumstats...")
 
     if params["type"] in ["both", "WF"]:
-        ss.do_sum_stats(out_dir_WF, ld_kws={"circular":True}, size_chr=chr_size, label="WF")
+        try:
+            ss.do_sum_stats(out_dir_WF, ld_kws={"circular":True}, size_chr=chr_size, label="WF")
+        except:
+            logging.error("Error while computing sumstats for WF")
     if params["type"] in ["both", "nonWF"]:
-        ss.do_sum_stats(out_dir_nWF, ld_kws={"circular":True}, size_chr=chr_size, label="nonWF")
+        try:
+            ss.do_sum_stats(out_dir_nWF, ld_kws={"circular":True}, size_chr=chr_size, label="nonWF")
+        except:
+            logging.error("Error while computing sumstats for nonWF")

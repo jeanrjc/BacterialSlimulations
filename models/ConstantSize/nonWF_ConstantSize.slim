@@ -53,8 +53,14 @@ reproduction()
 
 	for (rep in 0:1)
 	{
-		is_HGT = rbinom(size(parents), 1, HGTrate);
-
+		if (HGTrate > 0)
+		{
+			is_HGT = rbinom(size(parents), 1, HGTrate);
+		}
+		else
+		{
+			is_HGT = integer(size(parents)); // empty vector
+		}
 		for (i in seqAlong(parents))
 		{
 			if (is_HGT[i])

@@ -103,7 +103,7 @@ initialize()
 {
 	defineConstant("Theta", 2*Ne*Mu); // Theta
 	defineConstant("GCrate", Rho * genomeSize); // HGT probability
-	defineConstant("msRho", 2* Ne * Rho * genomeSize); // HGT probability
+	defineConstant("msRho", 2* Ne * gcBurnin * genomeSize); // HGT probability
 	defineConstant("x1", rdunif(1, 1, 10000000)); // random seed for ms otherwise there is a risk that it reuses seed from previous run.
 	defineConstant("x2", rdunif(1, 1, 10000000)); // random seed for ms
 	defineConstant("x3", rdunif(1, 1, 10000000)); // random seed for ms
@@ -126,7 +126,7 @@ initialize()
 	c1 = clock();
 
 	// sublaunch ms to generate initial state
-	ms_args = c(asInteger(Ne), 1, "-t", Theta * genomeSize, "-r", 0, genomeSize, "-p", 7, "-c", gcBurnin, tractlen, "-seeds", x1, x2, x3, "> " + runId + ".ms");
+	ms_args = c(asInteger(Ne), 1, "-t", Theta * genomeSize, "-r", 0, genomeSize, "-p", 7, "-c", msRho, tractlen, "-seeds", x1, x2, x3, "> " + runId + ".ms");
 	catn(ms_args);
 	system("ms", args=ms_args);
 

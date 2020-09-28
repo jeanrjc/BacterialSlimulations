@@ -1,7 +1,7 @@
 {
     "model": "ConstantSize",
     "scenario": "myScenario",
-    "type": "nonWF",
+    "type": "both",
     "N_replicat": 4,
     "rescaling_factor": 100,
 
