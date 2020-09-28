@@ -8,26 +8,13 @@ try:
     import allel
 except ImportError:
     pass
-from scipy.spatial.distance import squareform
-import itertools as it
-import matplotlib.pyplot as plt
-import matplotlib.colors
-import seaborn as sns
 import warnings
-import sys
-try:
-    import ghalton
-except ImportError:
-    pass
+
 
 warnings.simplefilter('ignore', FutureWarning)
 warnings.simplefilter('ignore', RuntimeWarning)
 import re
 import logging
-import glob
-import re
-import argparse
-from multiprocessing import cpu_count, Pool
 
 def harmonic_nm1(n):
     """return the n-1 harmonic number"""
@@ -324,10 +311,10 @@ def ihs(haplotype, pos_vec, window=None):
                                                         haplotype.count_alleles().T[1],
                                                         diagnostics=False)
     if window:
-            di = pd.DataFrame(ihs_stand, columns=["iHS"])
-            di["pos_cat"] = pd.cut(pos_vec, window, labels=range(1, window + 1))
-            dig = di.groupby("pos_cat").iHS.mean()
-            return dig
+        di = pd.DataFrame(ihs_stand, columns=["iHS"])
+        di["pos_cat"] = pd.cut(pos_vec, window, labels=range(1, window + 1))
+        dig = di.groupby("pos_cat").iHS.mean()
+        return dig
     else:
         return ihs_stand
 
@@ -340,8 +327,8 @@ def nsl(haplotype, pos_vec=None, window=None):
     if windowed stat, provide pos_vec too.
     """
 
-    nsl = allel.nsl(haplotype)
-    nsl_stand, bins = allel.standardize_by_allele_count(nsl,
+    nsl_stats = allel.nsl(haplotype)
+    nsl_stand, bins = allel.standardize_by_allele_count(nsl_stats,
                                                         haplotype.count_alleles().T[1],
                                                         diagnostics=False)
     if window:
@@ -410,57 +397,57 @@ def do_sum_stats(scenario_dir, size_chr=2e6,
     if nrep != "all":
         npzfiles = npzfiles[:nrep]
     for npzfile in npzfiles:
-            snp_mat, pos_vec = read_ms_compressed(os.path.join(scenario_dir, npzfile))
-            # convert in total size
-            if pos_vec.max() <= 1:
-                pos_vec = (pos_vec * size_chr).round().astype(int)
-            n_indiv = snp_mat.shape[0]
-            haplotype = allel.HaplotypeArray(snp_mat.T)
-            allel_count = haplotype.count_alleles()
-            derived_allel_count = allel_count.T[1]
-            sim_id = os.path.splitext(os.path.basename(npzfile))[0]
-            model, scenario, replicat, run_id = split_simid(sim_id)
+        snp_mat, pos_vec = read_ms_compressed(os.path.join(scenario_dir, npzfile))
+        # convert in total size
+        if pos_vec.max() <= 1:
+            pos_vec = (pos_vec * size_chr).round().astype(int)
+        n_indiv = snp_mat.shape[0]
+        haplotype = allel.HaplotypeArray(snp_mat.T)
+        allel_count = haplotype.count_alleles()
+        derived_allel_count = allel_count.T[1]
+        sim_id = os.path.splitext(os.path.basename(npzfile))[0]
+        model, scenario, replicat, run_id = split_simid(sim_id)
 
-            try:
-                df_sfs = sfs(haplotype, allel_count, **sfs_kws)
-                all_sfs = pd.concat([all_sfs, df_sfs])
-                # df_sfs.to_csv(os.path.join(scen_id + ".sfs"), sep="\t", index=False, mode="a", header=False)
-            except Exception as e:
-                logging.error("While computing SFS for {}\n>>> Error: {}".format(sim_id, e))
+        try:
+            df_sfs = sfs(haplotype, allel_count, **sfs_kws)
+            all_sfs = pd.concat([all_sfs, df_sfs])
+            # df_sfs.to_csv(os.path.join(scen_id + ".sfs"), sep="\t", index=False, mode="a", header=False)
+        except Exception as e:
+            logging.error("While computing SFS for {}\n>>> Error: {}".format(sim_id, e))
 
-            try:
-                ld = LD(haplotype, pos_vec, **ld_kws)
-                ld["sim_id"] = sim_id
-                ld["scenario"] = scenario
-                ld["run_id"] = run_id
-                ld["label"] = label
-                all_ld = pd.concat([all_ld, ld])
-            except Exception as e:
-                logging.error("While computing LD for {}\n>>> Error: {}".format(sim_id, e))
+        try:
+            ld = LD(haplotype, pos_vec, **ld_kws)
+            ld["sim_id"] = sim_id
+            ld["scenario"] = scenario
+            ld["run_id"] = run_id
+            ld["label"] = label
+            all_ld = pd.concat([all_ld, ld])
+        except Exception as e:
+            logging.error("While computing LD for {}\n>>> Error: {}".format(sim_id, e))
 
-            window = 100
-            try:
-                taj = tajimasD(haplotype, pos_vec, window=window)
-            except Exception as e:
-                logging.error("While doing Tajimas'D for {}\n>>> Error: {}".format(sim_id, e))
-                taj = pd.DataFrame()
-            try:
-                ihs_ser = ihs(haplotype, pos_vec, window=window)
-            except Exception as e:
-                logging.error("While doing IHS for {}\n>>> Error: {}".format(sim_id, e))
-                ihs_ser = pd.Series()
-            try:
-                nsl_ser = nsl(haplotype, pos_vec, window=window)
-            except Exception as e:
-                logging.error("While doing NSL for {}\n>>> Error: {}".format(sim_id, e))
-                nsl_ser = pd.Series()
-            try:
-                df_sel = pd.concat([taj, ihs_ser, nsl_ser], axis=1)
-                df_sel.index.name = "position_percent"
-                df_sel.reset_index(inplace=True)
-                all_sel = pd.concat([all_sel, df_sel])
-            except Exception as e:
-                logging.error("While doing concat of selection sumstats for {}\n>>> Error: {}".format(sim_id, e))
+        window = 100
+        try:
+            taj = tajimasD(haplotype, pos_vec, window=window)
+        except Exception as e:
+            logging.error("While doing Tajimas'D for {}\n>>> Error: {}".format(sim_id, e))
+            taj = pd.DataFrame()
+        try:
+            ihs_ser = ihs(haplotype, pos_vec, window=window)
+        except Exception as e:
+            logging.error("While doing IHS for {}\n>>> Error: {}".format(sim_id, e))
+            ihs_ser = pd.Series()
+        try:
+            nsl_ser = nsl(haplotype, pos_vec, window=window)
+        except Exception as e:
+            logging.error("While doing NSL for {}\n>>> Error: {}".format(sim_id, e))
+            nsl_ser = pd.Series()
+        try:
+            df_sel = pd.concat([taj, ihs_ser, nsl_ser], axis=1)
+            df_sel.index.name = "position_percent"
+            df_sel.reset_index(inplace=True)
+            all_sel = pd.concat([all_sel, df_sel])
+        except Exception as e:
+            logging.error("While doing concat of selection sumstats for {}\n>>> Error: {}".format(sim_id, e))
 
             #df_sel.to_csv(os.path.join(scen_id + ".sel"), sep="\t", index=False, mode="a", na_rep="NaN", header=False)
 
@@ -506,44 +493,6 @@ def do_sum_stats(scenario_dir, size_chr=2e6,
                        header=False if (selfile.tell() and not overwrite) else True)
 
 
-def load_sum_stats(scen_id, label="", path=""):
-    """Load data from scen_id/scen_id.{sfs|ld|sel} and return the 3 df"""
-
-    df_sfs = pd.read_table(os.path.join(outdir, scen_id+ ".sfs"))
-    df_ld = pd.read_table(os.path.join(outdir, scen_id+ ".ld"))
-    df_sel = pd.read_table(os.path.join(outdir, scen_id+ ".sel"))
-
-    if label != "":
-        df_sfs["label"] = label
-        df_ld["label"] = label
-        df_sel["label"] = label
-
-    return df_sfs, df_ld, df_sel
-
-def plot_fill(x, y, color, ax, step=1, label=None):
-    """
-    plot the mean as a line and the standard error to the mean as a shade.
-
-    Parameters
-    ----------
-    x : array
-        x-coordinate.
-    y : groupby object
-        distribution of y-coordinate, from which the mean and sem will be computed.
-    color : str
-        A color for the mean and the fill area around.
-    ax : Axes object
-        Where to plot.
-    step : int
-        to sample the x and y values every `step` values.
-    label : str
-        Describe the (x, y) curve.
-
-    """
-    x = x[::step]
-    y_mean, y_sem = y.mean()[::step], y.sem()[::step]
-    ax.plot(x, y_mean, color=color, label=label)
-    ax.fill_between(x, y_mean + y_sem, y_mean - y_sem, color=color, lw=0, alpha=0.5)
 
 
 def relative_position(positions, size_chr=0):
@@ -572,122 +521,6 @@ def relative_position(positions, size_chr=0):
     else:
         return np.ediff1d(positions, to_begin=(positions[0] - positions[-1]) % size_chr)
 
-def plot_sfs(df_sfs, by="scenario", window=1, ax=None, legend=True):
-    """
-    Function to plot sfs
-
-    Parameters
-    ----------
-    df_sfs : dataframe
-        Table generated by the sfs() function
-    by : str
-        Column on which to group the data.
-        By default, `scenario`, but it could be `label`, or a another created columns
-    step : int
-        If you want to subsample your sfs, and use every `step` values to plot
-        instead of all.
-    ax : matplotlib Axes
-        to plot it in a subplot.
-    legend: bool
-        Whether to plot the legend
-
-    Returns
-    -------
-    None
-    """
-
-    uniq_ID = df_sfs[by].sort_values().unique()
-    nsamp = df_sfs.N_indiv.max()
-    if len(uniq_ID) > 1:
-        dic_color = {j:plt.cm.viridis(int(i*255/(len(uniq_ID)-1))) for i,j in enumerate(uniq_ID)}
-    else:
-        dic_color = {uniq_ID[0] : plt.cm.viridis(128)}
-
-    if ax == None:
-        fig, ax = plt.subplots(1,1)
-
-    for g in df_sfs.groupby(by):
-        color = dic_color[g[0]]
-        if window > 1:
-            g[1].groupby("N_indiv")[["freq_indiv", "i_xi_norm"
-             ]].mean().rolling(window).mean().dropna().plot(x="freq_indiv",
-                                            y="i_xi_norm",
-                                            yerr=g[1].groupby("N_indiv")[["freq_indiv", "i_xi_sem_norm"
-                                                 ]].mean().rolling(window).i_xi_sem_norm.mean(),
-                                            ax = ax,
-                                            label=g[0],
-                                            color=color)
-
-        else:
-            # It groupby on N_indiv even though it supposed to have 1 value
-            # but it depends on the outer group defined by "by=". If it is
-            # something else than "scenario", it can have more than 1 value for
-            # a given N_indiv category.
-            g[1].groupby("N_indiv")[["freq_indiv", "i_xi_norm"
-             ]].mean().plot(x="freq_indiv",
-                            y="i_xi_norm",
-                            yerr=g[1].groupby("N_indiv")[["freq_indiv",
-                                                          "i_xi_sem_norm"
-                                                        ]].mean(),
-                            ax=ax,
-                            color=color,
-                            label=g[0])
-
-    ax.axhline(1/(nsamp),
-                  color="0.5",
-                  zorder=10,
-                  linestyle="--")
-    if legend:
-        ax.legend(loc=6, bbox_to_anchor=(1, 0.5))
-    else:
-        ax.legend_.set_visible(False)
-
-def plot_ld(df_ld, by="scenario", ax=None, legend=True):
-    """Function to plot the Linkage Desiquilibrium.
-
-    Parameters
-    ----------
-    df_ld : DataFrame
-        Dataframe generated by the ld() function.
-    by : str
-        Column on which to group the data.
-        By default, `scenario`, but it could be `label`, or a another created columns
-    ax : Axes
-        to plot in a subplot.
-    legend: bool
-        Whether to plot the legend
-
-    Returns
-    -------
-    None
-    """
-
-    uniq_ID = df_ld[by].sort_values().unique()
-    if len(uniq_ID) > 1:
-        dic_color = {j:plt.cm.viridis(int(i*255/(len(uniq_ID)-1))) for i,j in enumerate(uniq_ID)}
-    else:
-        dic_color = {uniq_ID[0]: plt.cm.viridis(128)}
-
-    if ax == None:
-        fig, ax = plt.subplots(1,1)
-
-    for g in df_ld.groupby(by):
-        color = dic_color[g[0]]
-        g[1].groupby("dist_group").mean().plot(x="mean_dist",
-                                               y="mean_r2",
-                                               yerr=g[1].groupby("dist_group").mean_r2.sem(),
-                                               kind="scatter",
-                                               label=g[0],
-                                               ax=ax,
-                                               color=color,
-                                               legend=True)
-    ax.set_xscale("log")
-    ax.set_xlim(10,
-                10**round(np.log10(df_ld.mean_dist.max())))
-    if legend:
-        ax.legend(loc=6, bbox_to_anchor=(1, 0.5))
-    else:
-        ax.legend_.set_visible(False)
 
 def change_range(x, min_val, max_val):
     """x is in [0, 1]. Return x in [min_val, max_val]"""
@@ -696,19 +529,4 @@ def change_range(x, min_val, max_val):
     return nx
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--save_path", default="", type=str)
-    parser.add_argument("--simul_params_path", default=None, type=str)
-    args = parser.parse_args()
-    simul_params = load_dict_from_json(args.simul_params_path)
-    os.chdir(args.save_path + '/' + simul_params['model_name'])
-    pattern = re.compile('.*' + simul_params['model_name'] + '_|_[0-9].npz$')
-    file_paths = glob.glob('*/*.npz')
-    name_ids = np.unique([re.sub(pattern, '', f) for f in file_paths])
-    for name_id in name_ids:
-        do_sum_stats(name_id, simul_params['model_name'], size_chr=simul_params['segment_length'], circular=False)
-    df_sfs, df_ld = load_sum_stats(simul_params['model_name'])
-    plot_sfs(df_sfs, simul_params['model_name'])
-    plt.savefig(simul_params['model_name'] + "_sfs")
-    plot_ld(df_ld, simul_params['model_name'])
-    plt.savefig(simul_params['model_name'] + "_ld")
+    pass
