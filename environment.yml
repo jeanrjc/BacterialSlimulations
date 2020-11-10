@@ -10,6 +10,6 @@ dependencies:
   - numpy=1.16.4
   - pandas=0.25.1
   - scikit-allel=1.2.1
-  - slim
-  - pyslim
-  - ms
+  - slim=3.4
+  - pyslim=0.401
+  - ms=2014_03_04
