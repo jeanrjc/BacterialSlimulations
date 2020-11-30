@@ -1,0 +1,227 @@
+// Bacteria evolving in a Petri dish, half of which contains antibiotics
+//
+// Benjamin C. Haller, 11/14/2020.  This model has been placed in the public domain; reuse
+// for any purpose is freely permitted.  Credit is appreciated but not legally required.
+//	A product of the Messer Lab, http://messerlab.org/slim/
+// Based on the bacterial reference model by J. Cury and B.C. Haller, 2020.
+
+initialize()
+{
+	// use this seed to reproduce the run shown
+	setSeed(2049327378235);
+	
+	if (exists("slimgui"))
+	{
+		// set constants in SLiMgui for testing
+		defineConstant("K", 1e6);   						// carrying-capacity density (unit square, no antibiotics, etc.)
+		defineConstant("S", 0.003);							// sigma_S, the spatial interaction width
+		defineConstant("D", 0.001);							// sigma_D, the spatial dispersal kernel width
+		defineConstant("Mu", 1e-7);
+		defineConstant("Rho", 1e-9);						// higher than in the base model because we *also* need a nearby neighbor
+		defineConstant("genomeSize", 1e5);
+		defineConstant("resistancePos", 1e4);
+		defineConstant("resistanceRate", 0.00001);		// probability that a new bacterium will spontaneously be resistant
+		defineConstant("antibioticEfficacy", 0.47);	// [0,1]: 1.0 would be a 100% kill rate for non-resistant bacteria
+		defineConstant("resistanceEfficacy", 0.8);		// [0,1]: 1.0 would be no effect of antibiotic on resistant bacteria
+		defineConstant("resistanceCost", 0.02);			// [0,1]: 0.0 would be no fitness cost for carrying the resistance allele
+		defineConstant("tractlen", 500);
+		defineConstant("N_generations", 1000);
+		defineConstant("N_colonies", 50);
+	}
+	initializeSLiMModelType("nonWF");
+	initializeSLiMOptions(dimensionality="xy");
+	initializeTreeSeq(); // record the Tree for recapitation and/or adding neutral mutations later
+	initializeMutationRate(0); // no neutral mutation in the forward simulation, we will add them later with msprime.
+	initializeMutationType("m1", 1.0, "f", 0.0); // neutral (unused)
+	initializeMutationType("m2", 1.0, "f", 0.0); // antibiotic resistance (introduced)
+	m2.color = "red";
+	initializeGenomicElementType("g1", m1, 1.0);
+	initializeGenomicElement(g1, 0, genomeSize - 1);
+	initializeRecombinationRate(0); // In SLiM recombination is between sister chromatids
+	defineConstant("HGTrate", Rho * genomeSize); // HGT probability (once a source is found)
+	
+	// spatial "mate choice" (i.e., finding a HGT source) and fecundity (i.e., division probability)
+	initializeInteractionType(1, "xy", reciprocal=T, maxDistance=S * 3);
+	i1.setInteractionFunction("n", 1.0, S);
+}
+
+// construct a spatial map representing our Petri dish; 0 = outside dish, 1 = no antibiotic, 2 = antibiotic
+function (i)petriValues(void)
+{
+	size = 1000;
+	half = size / 2;
+	values = matrix(rep(0, size * size), nrow=size, ncol=size);
+	
+	ramp = (seqLen(size) + 0.5 - half)^2;
+	xd = matrix(repEach(ramp, size), size, size, byrow=F);
+	yd = matrix(rep(ramp, size), size, size, byrow=F);
+	d = xd + yd;
+	insideDish = asInteger(d <= half^2);
+	insideDish[,0:(half-1)] = insideDish[,0:(half-1)] * 2;
+	return insideDish;
+}
+
+1 early()
+{
+	// start with a small number of randomly positioned colonies, each of a single bacterium
+	sim.addSubpop("p1", N_colonies);
+	p1.defineSpatialMap("petri", "xy", petriValues(), valueRange=c(0, 2), colors=c("black", "white", "#FFCCCC"));
+	for (ind in p1.individuals)
+	{
+		do
+			pos = p1.pointUniform();
+		while (p1.spatialMapValue("petri", pos) == 0);
+		ind.setSpatialPosition(pos);
+	}
+	sim.rescheduleScriptBlock(s1, start=N_generations, end=N_generations);
+}
+
+// modify the reproduction callback
+// to simulate homologous recombination in a gene conversion manner
+// after HGT of homologous DNA fragments
+// Modify the reproduction callback:
+// Draw the number of target of a HGT event
+// For each of them, draw a source individual, a start position
+// and a size of the fragment to be recombined through GC
+reproduction()
+{
+	// each parental individual reproduces twice, with independent probabilities of HGT
+	// the first thing we do is decide who is dividing, weeding out parents based on local density
+	inds = p1.individuals;
+	
+	//catn(sim.generation + ":");
+	competition = i1.totalOfNeighborStrengths(inds);
+	competition = (competition + 1) / (2 * PI * S^2);		// carrying-capacity density, see recipe 16.11
+	//catn("   mean(competition) == " + mean(competition));
+	divide_prob = 1.5 - competition / K;							// at capacity, divide_prob should be 0.5
+	//catn("   mean(divide_prob) == " + mean(divide_prob));
+	dividing = runif(inds.size()) < divide_prob;
+	//catn("   mean(dividing) == " + mean(dividing));
+	parents = inds[dividing];
+	
+	// now we let the parents that are reproducing do so
+	for (rep in 0:1)
+	{
+		if (HGTrate > 0)
+		{
+			is_HGT = rbinom(size(parents), 1, HGTrate);
+		}
+		else
+		{
+			is_HGT = integer(size(parents)); // empty vector
+		}
+		for (i in seqAlong(parents))
+		{
+			// absorbing boundaries: if the child position would be outside the dish, skip it, no room
+			parent = parents[i];
+			child_position = parent.spatialPosition + rnorm(2, 0, D);
+			if (p1.spatialMapValue("petri", child_position) == 0)
+			{
+				//catn("   OUT OF BOUNDS");
+				next;
+			}
+			
+			if (is_HGT[i])
+			{
+				// use our nearest neighbor as an HGT source (if we have a neighbor within the interaction distance)
+				// note that we allow non-dividing individuals to still be an HGT source
+				HGTsource = i1.nearestNeighbors(parent, 1).genome1;
+				
+				if (HGTsource.length())
+				{
+					pos_beg = rdunif(1, 0, genomeSize - 1);
+					tractLength = rgeom(1, 1.0 / tractlen);
+					pos_end = pos_beg + tractLength - 1;
+					if (pos_end == -1)
+					{ // if pos_beg and tractLength are both 0
+						pos_end = 1; // prevent the next mod operation to be negative which would crash later
+					}
+					else
+					{
+						pos_end = integerMod(pos_beg + tractLength - 1, genomeSize);
+					}
+					
+					// HGT from breaks[0] forward to breaks[1] on a circular chromosome
+					if (pos_beg > pos_end)
+						breaks = c(0, pos_end, pos_beg);
+					else
+						breaks = c(pos_beg, pos_end);
+					subpop.addRecombinant(parent.genome1, HGTsource, breaks, NULL, NULL, NULL).setSpatialPosition(child_position);
+					//catn("   added recombinant");
+					next;
+				}
+			}
+			
+			// no horizontal gene transfer; clonal replication
+			subpop.addRecombinant(parent.genome1, NULL, NULL, NULL, NULL, NULL).setSpatialPosition(child_position);
+			//catn("   added clone");
+		}
+	}
+	self.active = 0;
+}
+
+early()
+{
+	inds = p1.individuals;
+	ages = inds.age;
+	
+	// kill off parental individuals; conceptually they don't even exist,
+	// since they split by mitosis to generate their offspring
+	inds[ages > 0].fitnessScaling = 0.0;
+	inds = inds[ages == 0];
+	
+	// figure out who is resistant and who isn't
+	resistant = inds.genome1.containsMarkerMutation(m2, resistancePos);
+	inds_res = inds[resistant];
+	inds_non = inds[!resistant];
+	
+	// allow spontaneous mutation to the resistance allele with low probability
+	mutants = inds_non[runif(inds_non.size()) < resistanceRate];
+	if (mutants.size())
+	{
+		mutants.genome1.addNewDrawnMutation(m2, resistancePos);
+		//catn("   ADDED RESISTANCE TO " + mutants.size());
+		
+		// re-evaluate who is resistant
+		resistant = inds.genome1.containsMarkerMutation(m2, resistancePos);
+		inds_res = inds[resistant];
+		inds_non = inds[!resistant];
+	}
+	
+	// kill off non-resistant bacteria that are in the antibiotic zone with some probability
+	if (inds_non.size())
+	{
+		inds_non_treatment = inds_non[p1.spatialMapValue("petri", inds_non.spatialPosition) == 2];
+		inds_non_treatment.fitnessScaling = 1.0 - antibioticEfficacy;
+	}
+	
+	// kill off resistant bacteria in the antibiotic zone with a smaller probability
+	// also impose a fixed fitness cost for carrying the resistance allele
+	if (inds_res.size())
+	{
+		inds_res.fitnessScaling = 1.0 - resistanceCost;
+		inds_res_treatment = inds_res[p1.spatialMapValue("petri", inds_res.spatialPosition) == 2];
+		inds_res_treatment.fitnessScaling = (1.0 - resistanceCost) - antibioticEfficacy * (1.0 - resistanceEfficacy);
+	}
+}
+
+late()
+{
+	// color individuals according to their antibiotic resistance (red=resistant)
+	inds = p1.individuals;
+	if (inds.size())
+	{
+		resistant = inds.genome1.containsMarkerMutation(m2, resistancePos);
+		p1.individuals.color = ifelse(resistant, "red", "#F9F9BB");
+	}
+	
+	// look for "mates" and competitors, for the reproduction() callback in the next generation
+	i1.evaluate();
+}
+
+// At the end of the simulation, get the treeSeq
+s1 1000 late()
+{
+	sim.treeSeqOutput(runId + ".trees");
+	sim.simulationFinished();
+}

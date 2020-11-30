@@ -67,3 +67,9 @@ Replicates are available within each scenario's folder and contains different ty
 - `.time`: the timing of the burnin and forward part
 - `_final.trees`: The tree sequence after recapitation, in the nonWF version. 
 
+# Other models
+
+In the folder `Other_models`, the script are self-contained, and can be executed without the rest of this repo.
+It contains the following models: 
+    - Bacteria growing on a Petri dish, half of which contains antibiotics. Resistance mutation may occur, but at a cost in absence of antibiotic. The simulation is spatially constrained. 
+   
