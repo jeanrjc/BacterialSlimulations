@@ -18,13 +18,12 @@ initialize()
 	initializeGenomicElementType("g1", m1, 1.0);
 	initializeGenomicElement(g1, 0, genomeSize - 1);
 	initializeRecombinationRate(0); // In SLiM recombination is between sister chromatids
-    defineConstant("HGTrate", Rho * genomeSize); // HGT probability
-
+	defineConstant("HGTrate", Rho * genomeSize); // HGT probability
 }
 
 1 early()
 {
-	sim.addSubpop("p1", Ne);
+	sim.addSubpop("p1", Ne, haploid=T);
 	sim.rescheduleScriptBlock(s1, start=N_generations, end=N_generations);
 }
 
