@@ -64,7 +64,7 @@ function (i)petriValues(void)
 1 early()
 {
 	// start with a small number of randomly positioned colonies, each of a single bacterium
-	sim.addSubpop("p1", N_colonies);
+	sim.addSubpop("p1", N_colonies, haploid=T);
 	p1.defineSpatialMap("petri", "xy", petriValues(), valueRange=c(0, 2), colors=c("black", "white", "#FFCCCC"));
 	for (ind in p1.individuals)
 	{
